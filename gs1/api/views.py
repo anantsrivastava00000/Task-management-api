@@ -243,3 +243,90 @@ def delete_task(request):
 #     except Task.DoesNotExist:
 #         return Response({"error": "Task not found"}, status=)
 
+# Final api 
+@api_view(['GET', 'POST', 'PATCH', 'DELETE'])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated]) 
+def Task_manager_Api(request):
+    if request.method == 'GET':
+        id = request.query_params.get('id')
+        due_date = request.query_params.get('due_date')
+        completed = request.query_params.get('completed')
+        limits = request.query_params.get('limits', 1)
+        print(limits)
+        page = request.query_params.get('page')
+
+        if id:
+            # if Task.objects.filter(user=request.user, id=id).exists():
+                # task=Task.objects.get(user=request.user, id=id)
+            task=get_object_or_404(Task, user=request.user, id=id)
+            serializer = TaskSerializer(task).data
+            return Response({'data': serializer,
+                             'response_code':200})
+        if due_date:
+            print(due_date,'>>>>>>>>>>>')
+            # datetime.strptime(due_date, '%Y-%m-%d')
+            tasks = Task.objects.filter(user=request.user, due_date=due_date)
+
+
+        elif completed:
+            tasks = Task.objects.filter(user=request.user,completed=completed)
+    
+        else:
+            tasks = Task.objects.filter(user=request.user)
+            pagination = Paginator(tasks, limits)
+        
+            data = pagination.get_page(page)
+        
+            serializer = TaskSerializer(data, many=True).data
+        
+            return Response({'data':serializer,
+                        'count':len(tasks),
+                        'current_page':data.number,
+                        'total_page':pagination.num_pages,
+                        'response_code':200})
+
+
+        serializer = TaskSerializer(tasks, many=True).data
+        return Response({'data':serializer,
+                        'response_code':200})
+    if request.method == 'POST':
+        serializer = TaskSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()   
+            return Response(serializer.data, status=201) 
+        return Response(serializer.errors, status=400) 
+    
+    if request.method == 'PATCH':
+        id = request.data.get('id')
+ 
+    
+        if not Task.objects.filter(id=id).exists():
+            return Response({'msg':'Task not exists'})
+    
+        task=Task.objects.get(id=id)
+ 
+ 
+        if task.due_date and task.due_date >= date.today():
+            serializer=TaskUpdateSerializer(task, data=request.data, partial = True)
+            if serializer.is_valid():
+                task=serializer.save()
+                task.save()
+                return Response({'msg': 'data updated',
+                            'data': serializer.data,
+                            'reponse_code': 200})
+            return Response({'msg' : serializer.errors,
+                            'reponse_code': 400})
+ 
+        
+        else:   
+            return Response({'msg':'due date over'})
+    
+    if request.method == 'DELETE':
+        id=request.data.get('id')
+        if not Task.objects.filter(id=id).exists():
+            return Response({'msg':'Task not exists',
+                            'response_code': 404})
+        task=Task.objects.get(id=id)
+        task.delete()
+        return Response({'msg': 'data deleted'},status=200)

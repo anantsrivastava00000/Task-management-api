@@ -10,5 +10,6 @@ urlpatterns = [
     path('delete-task/', views.delete_task),
     # path('filter-task-and-due-date-range/', views.filter_task_and_due_date_range)
     # path('saw/', views.saw)  # for checking
+    path('Task_manager_Api/',views.Task_manager_Api)
 ]
 
