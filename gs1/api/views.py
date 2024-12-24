@@ -120,7 +120,9 @@ def Update_task(request):
     # if task.due_date and task.due_date < date.today(): #condition wrong hai bhaiya > ye sahi hai
     #     print('o nooooooooooooooooo nahi')
     
-    if task.due_date > date.today():
+ 
+
+    if task.due_date and task.due_date > date.today():
         serializer=TaskUpdateSerializer(task, data=request.data, partial = True)
         if serializer.is_valid():
             task=serializer.save()
