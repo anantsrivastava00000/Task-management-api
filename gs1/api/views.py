@@ -12,7 +12,7 @@ from django.shortcuts import get_object_or_404
 from django.core.paginator import Paginator
 
 from django.utils import timezone
-from datetime import date
+from datetime import datetime, date
 # Create your views here.
 
 
@@ -21,6 +21,12 @@ from datetime import date
 @permission_classes([IsAuthenticated])
 def task_list_and_retrieve_one_task(request):
     id = request.query_params.get('id')
+    due_date = request.query_params.get('due_date')
+    completed = request.query_params.get('completed')
+    limits = request.query_params.get('limits', 1)
+    print(limits)
+    page = request.query_params.get('page')
+
     if id:
         # if Task.objects.filter(user=request.user, id=id).exists():
             # task=Task.objects.get(user=request.user, id=id)
@@ -28,36 +34,56 @@ def task_list_and_retrieve_one_task(request):
             serializer = TaskSerializer(task).data
             return Response({'data': serializer,
                              'response_code':200})
-        # else:
-            # return Response({'msg': 'Task does not exists'})
+    if due_date:
+        print(due_date,'>>>>>>>>>>>')
+        # datetime.strptime(due_date, '%Y-%m-%d')
+        tasks = Task.objects.filter(user=request.user, due_date=due_date)
 
-    tasks = Task.objects.filter(user=request.user)
-    serializer = TaskSerializer(tasks, many=True).data
-    return Response({'data':serializer,
-                     'response_code':200})
 
-@api_view(['GET'])
-@authentication_classes([TokenAuthentication])
-@permission_classes([IsAuthenticated])
-def tasklist_with_pagination(request):
-
-    limits = request.query_params.get('limits', 1)
-    print(limits)
-    page = request.query_params.get('page')
-
-    tasks = Task.objects.filter(user=request.user)
+    elif completed:
+        tasks = Task.objects.filter(user=request.user,completed=completed)
     
-    pagination = Paginator(tasks, limits)
+    else:
+        tasks = Task.objects.filter(user=request.user)
+        pagination = Paginator(tasks, limits)
     
-    data = pagination.get_page(page)
+        data = pagination.get_page(page)
     
-    serializer = TaskSerializer(data, many=True).data
+        serializer = TaskSerializer(data, many=True).data
     
-    return Response({'data':serializer,
+        return Response({'data':serializer,
                      'count':len(tasks),
                      'current_page':data.number,
                      'total_page':pagination.num_pages,
                      'response_code':200})
+
+
+    serializer = TaskSerializer(tasks, many=True).data
+    return Response({'data':serializer,
+                     'response_code':200})
+
+# @api_view(['GET'])
+# @authentication_classes([TokenAuthentication])
+# @permission_classes([IsAuthenticated])
+# def tasklist_with_pagination(request):
+
+#     limits = request.query_params.get('limits', 1)
+#     print(limits)
+#     page = request.query_params.get('page')
+
+#     tasks = Task.objects.filter(user=request.user)
+    
+#     pagination = Paginator(tasks, limits)
+    
+#     data = pagination.get_page(page)
+    
+#     serializer = TaskSerializer(data, many=True).data
+    
+#     return Response({'data':serializer,
+#                      'count':len(tasks),
+#                      'current_page':data.number,
+#                      'total_page':pagination.num_pages,
+#                      'response_code':200})
 
  
      
@@ -66,6 +92,7 @@ def tasklist_with_pagination(request):
 @authentication_classes([TokenAuthentication])
 @permission_classes([IsAuthenticated]) 
 def task_create(request):
+
     serializer = TaskSerializer(data=request.data)
     
     if serializer.is_valid():
@@ -134,6 +161,42 @@ def delete_task(request):
 
 
 
+# @api_view(['GET'])
+# @authentication_classes([TokenAuthentication])
+# @permission_classes([IsAuthenticated])
+# def filter_task_and_due_date_range(request):
+ 
+#     tasks=Task.objects.filter(user=request.user)
+     
+#     completed = request.query_params.get('completed')
+#     # print(type(bool(completed)))
+#     completed = bool(completed)
+#     print(completed, '>>>>')
+    
+#     if  completed:
+#         tasks=tasks.filter(completed=completed)
+#         serializer=TaskSerializer(tasks, many=True).data
+#         return Response({'data':serializer})
+    
+#     start_date=request.query_params.get('start_date')
+#     end_date=request.query_params.get('end_date')
+    
+#     print(start_date, end_date)
+#     if not tasks.filter(due_date__range=(start_date, end_date), completed=completed).exists():
+#         return Response('tasks not exists')
+    
+#     tasks.filter(due_date__range=(start_date, end_date), completed=False)
+#     serializer=TaskSerializer(tasks, many=True).data
+#     return Response({'data':serializer})
+
+
+
+
+
+
+
+
+
 # def create_task(request): 
     # serializer = TaskSerializer(data=request.data)
     # print(request.data)
@@ -177,3 +240,4 @@ def delete_task(request):
 #         return Response(serializer.data)
 #     except Task.DoesNotExist:
 #         return Response({"error": "Task not found"}, status=)
+
